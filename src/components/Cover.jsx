@@ -1,13 +1,19 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function Cover({ src, fallbackSrc, alt, className = '' }) {
   const [useFallback, setUseFallback] = useState(false)
   const [failed, setFailed] = useState(false)
 
+  // Reseta os estados quando a imagem ou o jogo selecionado mudar
+  useEffect(() => {
+    setUseFallback(false)
+    setFailed(false)
+  }, [src, fallbackSrc])
+
   const activeSrc = !useFallback ? src : fallbackSrc
 
   const handleError = () => {
-    if (!useFallback && fallbackSrc) {
+    if (!useFallback && fallbackSrc && fallbackSrc !== src) {
       setUseFallback(true)
     } else {
       setFailed(true)
@@ -33,7 +39,9 @@ export default function Cover({ src, fallbackSrc, alt, className = '' }) {
       className={`cover ${className}`}
       src={activeSrc}
       alt={alt}
-      loading="lazy"
+      loading="eager"
+      decoding="async"
+      referrerPolicy="no-referrer"
       onError={handleError}
     />
   )
