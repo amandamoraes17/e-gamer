@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import Header from './components/Header.jsx'
 import Hero from './components/Hero.jsx'
-import FreeDropsBar from './components/FreeDropsBar.jsx'
 import DiscordRooms from './components/DiscordRooms.jsx'
 import Upcoming from './components/Upcoming.jsx'
 import Deals from './components/Deals.jsx'
@@ -55,7 +54,6 @@ export default function App() {
       <Header />
       <main className="container">
         <Hero />
-        <FreeDropsBar />
         <DiscordRooms />
         <Upcoming items={data.upcoming} />
         <Deals items={data.deals} />

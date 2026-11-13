@@ -1,129 +1,57 @@
 import { useState } from 'react'
-import { communityTopics, discordUrl } from '../data/content.js'
+import { discordUrl } from '../data/content.js'
+import './community-hub.css'
+
+const topics = [
+  { category: 'PAPO DE GAMER', title: 'Qual jogo você queria esquecer só para jogar de novo?', description: 'Aquela história, boss ou final que ficou na memória.', channel: '#papo-gamer', icon: '01', tone: 'blue' },
+  { category: 'DICAS & ESTRATÉGIAS', title: 'Qual dica mudou o seu jeito de jogar?', description: 'Compartilhe o que você gostaria de ter aprendido antes.', channel: '#dicas-e-guias', icon: '02', tone: 'purple' },
+  { category: 'CULTURA GEEK', title: 'Qual universo dos games merecia uma série?', description: 'Vale defender sua adaptação dos sonhos. Sem spoilers!', channel: '#filmes-e-series', icon: '03', tone: 'orange' },
+]
+const options = [
+  { id: 'competitive', title: 'Foco na vitória', description: 'Ranqueada, estratégia e aquele clutch.', icon: '↗' },
+  { id: 'coop', title: 'Melhor com a galera', description: 'Co-op, call e boas risadas.', icon: '＋' },
+  { id: 'story', title: 'Só mais uma missão', description: 'Uma boa história para mergulhar.', icon: '◇' },
+  { id: 'explorer', title: 'Um pouco de tudo', description: 'O que importa é descobrir o próximo jogo.', icon: '✳' },
+]
+const storageKey = 'egamer-playstyle-v1'
 
 export default function CommunityHub() {
-  const [pollVotes, setPollVotes] = useState({
-    gta6: 624,
-    doom: 412,
-    monsterHunter: 298,
-    witcher: 195,
+  const [choice, setChoice] = useState(() => {
+    try {
+      const saved = window.localStorage.getItem(storageKey)
+      return options.some((option) => option.id === saved) ? saved : null
+    } catch { return null }
   })
-  const [hasVoted, setHasVoted] = useState(false)
-  const [userVote, setUserVote] = useState(null)
-
-  const totalVotes = Object.values(pollVotes).reduce((a, b) => a + b, 0)
-
-  const handleVote = (key) => {
-    if (hasVoted) return
-    setPollVotes((prev) => ({ ...prev, [key]: prev[key] + 1 }))
-    setHasVoted(true)
-    setUserVote(key)
+  const select = (id) => {
+    setChoice(id)
+    try { window.localStorage.setItem(storageKey, id) } catch { /* Choice remains available for this visit. */ }
   }
 
-  const pollOptions = [
-    { key: 'gta6', label: 'Grand Theft Auto VI' },
-    { key: 'doom', label: 'DOOM: The Dark Ages' },
-    { key: 'monsterHunter', label: 'Monster Hunter Wilds' },
-    { key: 'witcher', label: 'Novo The Witcher (Polaris)' },
-  ]
-
   return (
-    <section id="comunidade" className="section community-hub">
-      <div className="section__header-row">
-        <div>
-          <div className="section__kicker">INTERAÇÃO & DEBATES</div>
-          <h2 className="section__title">Voz da Comunidade Gamer</h2>
-          <p className="section__desc">
-            Vote nas enquetes da semana e participe das discussões mais quentes da galera.
-          </p>
-        </div>
+    <section id="comunidade" className="section community-refresh" aria-labelledby="community-heading">
+      <div className="community-refresh__heading">
+        <div><div className="section__kicker">INTERAÇÃO & DEBATES</div><h2 id="community-heading" className="section__title">O próximo papo começa com você.</h2><p className="section__desc">Entre na conversa, compartilhe suas descobertas e encontre quem curte o mesmo que você.</p></div>
+        <a className="community-refresh__link" href={discordUrl} target="_blank" rel="noopener noreferrer">Ir para o Discord <span aria-hidden="true">↗</span></a>
       </div>
-
-      <div className="community-hub__grid">
-        {/* Tópicos em alta */}
-        <div className="topics-column">
-          <h3 className="column-title">
-            <span className="fire-icon">🔥</span> Discussões em Alta
-          </h3>
-          <div className="topics-list">
-            {communityTopics.map((topic) => (
-              <a
-                key={topic.id}
-                href={discordUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="topic-card"
-              >
-                <span className="topic-card__tag">{topic.tag}</span>
-                <h4 className="topic-card__title">{topic.title}</h4>
-                <div className="topic-card__meta">
-                  <span>Por @{topic.author}</span>
-                  <div className="topic-card__stats">
-                    <span>💬 {topic.replies} respostas</span>
-                    <span>❤️ {topic.likes}</span>
-                  </div>
-                </div>
-              </a>
-            ))}
-          </div>
+      <div className="community-refresh__grid">
+        <div className="conversation-list">
+          <div className="conversation-list__heading"><h3>Assuntos para puxar conversa</h3><span>ESCOLHA SEU PAPO</span></div>
+          {topics.map((topic) => <a className={`conversation conversation--${topic.tone}`} key={topic.icon} href={discordUrl} target="_blank" rel="noopener noreferrer">
+            <span className="conversation__number" aria-hidden="true">{topic.icon}</span>
+            <div className="conversation__body"><span className="conversation__category">{topic.category}</span><h4>{topic.title}</h4><p>{topic.description}</p><span className="conversation__action">Conversar no Discord <span aria-hidden="true">↗</span></span></div>
+          </a>)}
+          <p className="conversation-list__note">Tem outro assunto em mente? Leve sua ideia para o servidor.</p>
         </div>
-
-        {/* Enquete da Comunidade */}
-        <div className="poll-column">
-          <div className="poll-card">
-            <div className="poll-card__badge">ENQUETE DA SEMANA</div>
-            <h3 className="poll-card__question">
-              Qual é o lançamento que você mais está ansioso para jogar em 2025?
-            </h3>
-            <span className="poll-card__sub">
-              {totalVotes.toLocaleString('pt-BR')} gamers já votaram
-            </span>
-
-            <div className="poll-card__options">
-              {pollOptions.map((opt) => {
-                const votes = pollVotes[opt.key]
-                const percent = Math.round((votes / totalVotes) * 100)
-                const isSelected = userVote === opt.key
-
-                return (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    className={`poll-option ${isSelected ? 'poll-option--selected' : ''}`}
-                    onClick={() => handleVote(opt.key)}
-                  >
-                    <div
-                      className="poll-option__progress"
-                      style={{ width: hasVoted ? `${percent}%` : '0%' }}
-                    />
-                    <div className="poll-option__content">
-                      <span className="poll-option__label">{opt.label}</span>
-                      {hasVoted && (
-                        <span className="poll-option__percent">{percent}%</span>
-                      )}
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-
-            {hasVoted && (
-              <div className="poll-card__voted-msg">
-                ✅ Seu voto foi registrado! Obrigado por participar.
-              </div>
-            )}
-
-            <div className="poll-card__cta">
-              <a
-                className="btn btn--primary btn--full"
-                href={discordUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Participe do Discord para Comentar
-              </a>
-            </div>
+        <div className="playstyle">
+          <div className="playstyle__eyebrow"><span aria-hidden="true">◈</span> SEU JEITO DE JOGAR</div>
+          <h3 id="playstyle-question">Na hora de dar o play,<br />qual é a sua vibe?</h3>
+          <p className="playstyle__intro">Todo estilo tem lugar por aqui.</p>
+          <div className="playstyle__options" role="group" aria-labelledby="playstyle-question">
+            {options.map((option) => <button type="button" className="playstyle-option" key={option.id} aria-pressed={choice === option.id} onClick={() => select(option.id)}><span className="playstyle-option__icon" aria-hidden="true">{option.icon}</span><span className="playstyle-option__text"><strong>{option.title}</strong><small>{option.description}</small></span><span className="playstyle-option__check" aria-hidden="true">{choice === option.id ? '✓' : ''}</span></button>)}
           </div>
+          <p className="playstyle__feedback" role="status">{choice ? 'Boa! Agora encontre sua galera no Discord.' : 'Selecione a opção que mais combina com você.'}</p>
+          <a className="btn btn--pill-white btn--full playstyle__cta" href={discordUrl} target="_blank" rel="noopener noreferrer">{choice ? 'Encontrar minha galera' : 'Participar da comunidade'} <span aria-hidden="true">↗</span></a>
+          <small className="playstyle__note">Sua escolha fica apenas neste navegador.</small>
         </div>
       </div>
     </section>
