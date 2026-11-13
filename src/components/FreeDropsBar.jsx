@@ -26,7 +26,7 @@ export default function FreeDropsBar() {
         <span className="drops-bar__badge">
           RADAR DE JOGOS GRÁTIS {isLive && <small style={{ fontSize: '0.65rem', opacity: 0.8 }}>(AO VIVO)</small>}
         </span>
-        <span className="drops-bar__sub">Resgate agora sem pagar nada:</span>
+        <span className="drops-bar__sub">Resgate sem custo nas plataformas oficiais:</span>
       </div>
 
       <div className="drops-bar__list">
@@ -47,7 +47,7 @@ export default function FreeDropsBar() {
                 {drop.store} • {drop.deadline}
               </span>
             </div>
-            <svg className="drop-card__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <svg className="drop-card__arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M5 12h14m-7-7 7 7-7 7" />
             </svg>
           </a>

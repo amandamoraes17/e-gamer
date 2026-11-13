@@ -11,7 +11,7 @@ export const discordUrl = 'https://discord.gg/egamer'
 // O que você deixar vazio '' continua usando a lista padrão do site sem quebrar!
 export const googleSheetsUrls = {
   consoles: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQuA8fu2HuArECnNGAaGfECeK8275oYZhq7AIJtZWUS0qKhEHPX54gdA82EsnZz-qbu4dufy59HojaL/pub?output=csv',    // Planilha de PS Plus, Game Pass e novidades de consoles
-  lancamentos: '', // Planilha de Próximos Lançamentos mais aguardados
+  lancamentos: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRdR0eTn5EcaAm2ElQMxT1Keftpcq1sv-pxQ7-VcJvH7L-ihXkdmQa1i8LG5fwUPw/pub?output=csv', // Planilha de Próximos Lançamentos mais aguardados
   ofertas: '',     // Planilha de Jogos em Promoção e Ofertas
   filmes: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTbAbKok05pPh30s1jlODnRh3ksyZmLnn5i7uD07thIg0RqOB7_xYqhhB-hNIPYO3G4pi7D8cUbq5dG/pub?output=csv',      // Planilha de Filmes, Séries e Cultura Geek
 }

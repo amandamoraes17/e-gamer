@@ -55,6 +55,23 @@ function parseCSV(text) {
 }
 
 /**
+ * Imagens temáticas inteligentes para jogos de lançamentos quando a planilha
+ * tiver "Buscar imagem" ou estiver vazia.
+ */
+function getGamePosterFallback(title) {
+  const t = (title || '').toLowerCase()
+  if (t.includes('gta') || t.includes('theft')) return '/img/gta5.jpg'
+  if (t.includes('rayman')) return 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200&auto=format&fit=crop&q=80'
+  if (t.includes('dragon quest') || t.includes('monster')) return 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&auto=format&fit=crop&q=80'
+  if (t.includes('warhammer') || t.includes('dawn of war')) return '/img/delta-force.jpg'
+  if (t.includes('titan') || t.includes('attack')) return 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&auto=format&fit=crop&q=80'
+  if (t.includes('layton') || t.includes('steam')) return 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&auto=format&fit=crop&q=80'
+  if (t.includes('exile')) return 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1200&auto=format&fit=crop&q=80'
+  if (t.includes('assassin') || t.includes('creed') || t.includes('black flag')) return 'https://images.unsplash.com/photo-1563089145-599997674d42?w=1200&auto=format&fit=crop&q=80'
+  return '/img/doom.jpg'
+}
+
+/**
  * 1. Planilha de Consoles & PS Plus / Game Pass
  */
 export async function fetchConsolesSheet(csvUrl) {
@@ -67,18 +84,28 @@ export async function fetchConsolesSheet(csvUrl) {
     const rows = parseCSV(text)
     if (rows.length < 2) return fallbackConsoleNews
 
-    const headers = rows[0].map((h) => h.toLowerCase().trim())
-    const getIdx = (name) => headers.indexOf(name)
+    // Encontra o cabeçalho real
+    let headerIdx = 0
+    for (let i = 0; i < rows.length; i++) {
+      const lower = rows[i].map((c) => c.toLowerCase().trim())
+      if (lower.includes('titulo') || lower.includes('jogo') || lower.includes('título')) {
+        headerIdx = i
+        break
+      }
+    }
+
+    const headers = rows[headerIdx].map((h) => h.toLowerCase().trim())
+    const getIdx = (name) => headers.findIndex((h) => h.includes(name))
 
     const list = []
-    for (let i = 1; i < rows.length; i++) {
+    for (let i = headerIdx + 1; i < rows.length; i++) {
       const row = rows[i]
-      const titulo = row[getIdx('titulo')] || ''
+      const titulo = row[getIdx('titulo')] || row[getIdx('jogo')] || ''
       if (!titulo) continue
 
       list.push({
         title: titulo,
-        platform: row[getIdx('plataforma')] || 'Console',
+        platform: row[getIdx('plataforma')] || 'PlayStation',
         platformTag: row[getIdx('categoria')] || 'Catálogo',
         date: row[getIdx('data')] || 'Atualizado',
         text: row[getIdx('texto')] || '',
@@ -96,7 +123,7 @@ export async function fetchConsolesSheet(csvUrl) {
 }
 
 /**
- * 2. Planilha de Próximos Lançamentos
+ * 2. Planilha de Próximos Lançamentos (Compatível com planilha da usuária)
  */
 export async function fetchUpcomingSheet(csvUrl) {
   if (!csvUrl) return fallbackUpcoming
@@ -108,31 +135,81 @@ export async function fetchUpcomingSheet(csvUrl) {
     const rows = parseCSV(text)
     if (rows.length < 2) return fallbackUpcoming
 
-    const headers = rows[0].map((h) => h.toLowerCase().trim())
-    const getIdx = (name) => headers.indexOf(name)
+    // Localiza a linha do cabeçalho real (pode estar na linha 0, 1, 2, etc.)
+    let headerIdx = 0
+    for (let i = 0; i < rows.length; i++) {
+      const lower = rows[i].map((c) => c.toLowerCase().trim())
+      if (lower.includes('jogo') || lower.includes('titulo') || lower.includes('título')) {
+        headerIdx = i
+        break
+      }
+    }
+
+    const headers = rows[headerIdx].map((h) => h.toLowerCase().trim())
+    const findCol = (terms) => headers.findIndex((h) => terms.some((t) => h.includes(t)))
+
+    const jogoCol = findCol(['jogo', 'titulo', 'título'])
+    const dataCol = findCol(['data', 'prevista', 'lancamento', 'lançamento'])
+    const platCol = findCol(['plataforma'])
+    const statusCol = findCol(['status'])
+    const trailerCol = findCol(['trailer', 'video', 'vídeo'])
+    const infoCol = findCol(['informac', 'informaç', 'info'])
+    const bannerCol = findCol(['banner'])
+    const imgCol = findCol(['imagem', 'capa'])
+    const obsCol = findCol(['sobre', 'observa', 'obs', 'descric', 'descriç', 'sinopse'])
 
     const list = []
-    for (let i = 1; i < rows.length; i++) {
+    for (let i = headerIdx + 1; i < rows.length; i++) {
       const row = rows[i]
-      const titulo = row[getIdx('titulo')] || ''
+      const titulo = (row[jogoCol] || '').trim()
       if (!titulo) continue
 
-      const platformsRaw = row[getIdx('plataformas')] || 'PC / Consoles'
-      const platformsArray = platformsRaw.split('/').map((p) => p.trim())
-      const trailer = row[getIdx('trailer')] || ''
+      const rawPlatforms = (row[platCol] || 'PC / Consoles').trim()
+      const platformsArray = rawPlatforms
+        .split(/[;/]/)
+        .map((p) => p.replace(/\(.*?\)/g, '').trim())
+        .filter((p) => p.length > 0)
+
+      const rawStatus = (row[statusCol] || 'Em breve').trim()
+      const rawData = (row[dataCol] || '2026').trim()
+      const rawObs = (row[obsCol] || 'Grande lançamento aguardado pela comunidade gamer.').trim()
+      const rawTrailer = (row[trailerCol] || '').trim()
+      const rawInfo = (row[infoCol] || '').trim()
+      const rawBanner = bannerCol !== -1 ? (row[bannerCol] || '').trim().replace(/^"|"$/g, '') : ''
+      const rawImg = imgCol !== -1 ? (row[imgCol] || '').trim().replace(/^"|"$/g, '') : ''
+
+      const hasCustomBanner = rawBanner && (rawBanner.startsWith('http://') || rawBanner.startsWith('https://') || rawBanner.startsWith('/'))
+      const hasCustomImg = rawImg && (rawImg.startsWith('http://') || rawImg.startsWith('https://') || rawImg.startsWith('/'))
+
+      // Prioridade do banner: coluna banner > coluna imagem/capa > fallback
+      const resolvedBanner = hasCustomBanner ? rawBanner : (hasCustomImg ? rawImg : getGamePosterFallback(titulo))
+
+      // Prioridade da miniatura: coluna imagem/capa > coluna banner > fallback
+      const resolvedThumb = hasCustomImg ? rawImg : (hasCustomBanner ? rawBanner : getGamePosterFallback(titulo))
+
+      const hasCustomTrailer = rawTrailer && rawTrailer.startsWith('http')
+      const resolvedTrailer = hasCustomTrailer
+        ? rawTrailer
+        : `https://www.youtube.com/results?search_query=${encodeURIComponent(titulo)}+trailer+oficial`
+
+      const hasCustomInfo = rawInfo && rawInfo.startsWith('http')
+      const resolvedInfo = hasCustomInfo
+        ? rawInfo
+        : `https://www.google.com/search?q=${encodeURIComponent(titulo)}+jogo+lancamento`
 
       list.push({
         title: titulo,
-        release: row[getIdx('lancamento')] || 'Em breve',
-        tag: row[getIdx('genero')] || 'Jogo',
-        platforms: platformsArray,
-        developer: row[getIdx('estudio')] || 'Estúdio',
-        desc: row[getIdx('descricao')] || '',
-        image: row[getIdx('imagem')] || '',
-        fallbackImg: row[getIdx('imagem')] || '',
-        trailerUrl: trailer && trailer !== '#'
-          ? trailer
-          : `https://www.youtube.com/results?search_query=${encodeURIComponent(titulo)}+trailer`,
+        release: rawData,
+        status: rawStatus,
+        tag: rawStatus,
+        platforms: platformsArray.length > 0 ? platformsArray : ['PC', 'Consoles'],
+        developer: 'Estúdio / Publicadora',
+        desc: rawObs,
+        bannerImage: resolvedBanner,
+        image: resolvedThumb,
+        fallbackImg: getGamePosterFallback(titulo),
+        trailerUrl: resolvedTrailer,
+        infoUrl: resolvedInfo,
       })
     }
 
@@ -156,13 +233,22 @@ export async function fetchDealsSheet(csvUrl) {
     const rows = parseCSV(text)
     if (rows.length < 2) return fallbackDeals
 
-    const headers = rows[0].map((h) => h.toLowerCase().trim())
-    const getIdx = (name) => headers.indexOf(name)
+    let headerIdx = 0
+    for (let i = 0; i < rows.length; i++) {
+      const lower = rows[i].map((c) => c.toLowerCase().trim())
+      if (lower.includes('jogo') || lower.includes('titulo')) {
+        headerIdx = i
+        break
+      }
+    }
+
+    const headers = rows[headerIdx].map((h) => h.toLowerCase().trim())
+    const getIdx = (name) => headers.findIndex((h) => h.includes(name))
 
     const list = []
-    for (let i = 1; i < rows.length; i++) {
+    for (let i = headerIdx + 1; i < rows.length; i++) {
       const row = rows[i]
-      const jogo = row[getIdx('jogo')] || ''
+      const jogo = row[getIdx('jogo')] || row[getIdx('titulo')] || ''
       if (!jogo) continue
 
       const descNum = parseFloat(row[getIdx('desconto')] || '0')
@@ -172,11 +258,11 @@ export async function fetchDealsSheet(csvUrl) {
       list.push({
         game: jogo,
         store: row[getIdx('loja')] || 'Loja Digital',
-        platformCategory: (row[getIdx('plataforma_categoria')] || 'pc').toLowerCase(),
+        platformCategory: (row[getIdx('plataforma')] || 'pc').toLowerCase(),
         discount: descNum,
         oldPrice: oldP,
         price: promoP,
-        tag: row[getIdx('destaque_tag')] || 'Promoção',
+        tag: row[getIdx('destaque')] || 'Promoção',
         desc: row[getIdx('descricao')] || '',
         image: row[getIdx('imagem')] || '',
         fallbackImg: row[getIdx('imagem')] || '',
@@ -204,22 +290,31 @@ export async function fetchGeekSheet(csvUrl) {
     const rows = parseCSV(text)
     if (rows.length < 2) return fallbackGeek
 
-    const headers = rows[0].map((h) => h.toLowerCase().trim())
-    const getIdx = (name) => headers.indexOf(name)
+    let headerIdx = 0
+    for (let i = 0; i < rows.length; i++) {
+      const lower = rows[i].map((c) => c.toLowerCase().trim())
+      if (lower.includes('titulo') || lower.includes('filme') || lower.includes('serie')) {
+        headerIdx = i
+        break
+      }
+    }
+
+    const headers = rows[headerIdx].map((h) => h.toLowerCase().trim())
+    const getIdx = (name) => headers.findIndex((h) => h.includes(name))
 
     const list = []
-    for (let i = 1; i < rows.length; i++) {
+    for (let i = headerIdx + 1; i < rows.length; i++) {
       const row = rows[i]
-      const titulo = row[getIdx('titulo')] || ''
+      const titulo = row[getIdx('titulo')] || row[getIdx('filme')] || ''
       if (!titulo) continue
 
       list.push({
         title: titulo,
         category: row[getIdx('categoria')] || 'Geek',
-        type: row[getIdx('tipo')] || 'series',
+        type: (row[getIdx('tipo')] || 'series').toLowerCase(),
         streaming: row[getIdx('streaming')] || 'Cinema',
         rating: row[getIdx('nota')] || '9.0',
-        year: row[getIdx('ano')] || '2025',
+        year: row[getIdx('ano')] || '2026',
         desc: row[getIdx('sinopse')] || '',
         image: row[getIdx('imagem')] || '',
         fallbackImg: row[getIdx('imagem')] || '',
